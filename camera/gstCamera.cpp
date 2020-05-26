@@ -43,6 +43,7 @@ const char* gstCameraSrcToString( gstCameraSrc src )
 	if( src == GST_SOURCE_NVCAMERA )		return "GST_SOURCE_NVCAMERA";
 	else if( src == GST_SOURCE_NVARGUS )	return "GST_SOURCE_NVARGUS";
 	else if( src == GST_SOURCE_V4L2 )		return "GST_SOURCE_V4L2";
+	else if( src == GST_SOURCE_USERPIPELINE)	return "GST_SOURCE_USERPIPELINE";
 
 	return "UNKNOWN";
 }
@@ -423,7 +424,7 @@ bool gstCamera::buildLaunchStr( gstCameraSrc src )
 		
 		ss << "video/x-raw ! appsink name=mysink";
 	}
-	else
+	else if( src == GST_SOURCE_V4L2 )
 	{
 		ss << "v4l2src device=" << mCameraStr << " ! ";
 		ss << "video/x-raw, width=(int)" << mWidth << ", height=(int)" << mHeight << ", "; 
@@ -437,6 +438,14 @@ bool gstCamera::buildLaunchStr( gstCameraSrc src )
 		ss << "appsink name=mysink";
 
 		mSource = GST_SOURCE_V4L2;
+	}
+	else // GST_SOURCE_USERPIPELINE
+	{
+		ss << mCameraStr;
+		ss << " ! videoconvert ! video/x-raw, format=RGB, width=(int)" << mWidth << ", height=(int)" << mHeight << " ! ";
+		ss << "appsink name=mysink";
+
+		mSource = GST_SOURCE_USERPIPELINE;
 	}
 	
 	mLaunchStr = ss.str();
@@ -477,8 +486,10 @@ bool gstCamera::parseCameraStr( const char* camera )
 		return true;
 	}
 
-	printf(LOG_GSTREAMER "gstCamera::Create('%s') -- invalid camera device requested\n", camera);
-	return false;
+	printf(LOG_GSTREAMER "gstCamera::Create('%s') as user pipeline, may fail...\n", camera);
+
+	mCameraStr = camera;
+	return true;
 }
 
 
